@@ -125,6 +125,7 @@
               </el-form-item>
               <el-form-item label="Short Link:">
                 <el-input class="copy-content" disabled v-model="curtomShortSubUrl">
+                  <el-button slot="append" @click="showQrCode" icon="el-icon-full-screen">QR Code</el-button>
                   <el-button slot="append" v-clipboard:copy="curtomShortSubUrl" v-clipboard:success="onCopy"
                     ref="copy-btn" icon="el-icon-document-copy">Copy</el-button>
                 </el-input>
@@ -201,6 +202,14 @@
       @cancel="handleLoadCancel"
       @confirm="handleUrlParse"
     />
+
+    <!-- QR Code 对话框 -->
+    <el-dialog :visible.sync="dialogQrCodeVisible" title="Scan QR Code" width="300px" center>
+      <div style="text-align: center">
+        <img :src="qrCodeUrl" alt="QR Code" style="max-width: 100%; height: auto; border: 1px solid #eee; padding: 10px;" />
+        <p style="margin-top: 10px; font-size: 12px; color: #666;">Scan with Shadowrocket or other VPN apps</p>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -253,6 +262,8 @@ export default {
       dialogLoadConfigVisible: false,
       uploadConfig: "",
       subDocAdvanced: CONSTANTS.DOC_ADVANCED,
+      dialogQrCodeVisible: false,
+      qrCodeUrl: "",
 
       // 是否为 PC 端
       isPC: true,
@@ -474,6 +485,15 @@ export default {
           "Subscription link generation is purely client-side (excluding shortlinks), ensuring no privacy issues. We provide a default backend for conversion, but privacy-conscious users are encouraged to deploy their own."
         )
       });
+    },
+
+    showQrCode() {
+      if (this.curtomShortSubUrl === "") {
+        this.$message.warning("Please generate a short link first");
+        return;
+      }
+      this.qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(this.curtomShortSubUrl)}`;
+      this.dialogQrCodeVisible = true;
     },
 
     // 表单相关方法
