@@ -213,6 +213,15 @@ Subscription converter interface দেখাবে! 🎉
 ### Frontend API connect করতে পারছে না
 - `frontend/.env` ফাইল check করুন
 - Browser console এ error check করুন
+- [x] Run dev server and verify UI translations <!-- id: 9 -->
+- [x] Test a conversion with the live backend <!-- id: 10 -->
+- [x] Verify custom domain routing (if possible) <!-- id: 11 -->
+
+## Live Deployment
+- [x] Push code to GitHub repository <!-- id: 12 -->
+- [x] Deploy Frontend to Cloudflare Pages <!-- id: 13 -->
+- [/] Deploy Worker to Cloudflare (api.digital-freedom.site) <!-- id: 14 -->
+- [ ] Deploy Backend to Render.com <!-- id: 15 -->
 
 ### Custom domain কাজ করছে না
 - DNS propagation এ 5-10 মিনিট লাগতে পারে
