@@ -1,0 +1,22 @@
+name = "subscription-converter-worker"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# Workers configuration
+workers_dev = true
+
+# Routes (will be configured after deployment)
+# routes = [
+#   { pattern = "api.digital-freedom.site/*", zone_name = "digital-freedom.site" }
+# ]
+
+# Environment variables
+[vars]
+BACKEND_URL = "https://YOUR_RENDER_APP.onrender.com"
+
+# Build configuration
+[build]
+command = ""
+
+# Compatibility flags
+compatibility_flags = []
