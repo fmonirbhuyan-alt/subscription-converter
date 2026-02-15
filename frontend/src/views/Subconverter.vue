@@ -204,10 +204,31 @@
     />
 
     <!-- QR Code 对话框 -->
-    <el-dialog :visible.sync="dialogQrCodeVisible" title="Scan QR Code" width="300px" center>
+    <el-dialog :visible.sync="dialogQrCodeVisible" width="350px" center>
+      <div slot="title" style="text-align: center;">
+        <span style="font-size: 18px; font-weight: bold;">Scan QR Code</span>
+        <div style="font-size: 14px; color: #409EFF; margin-top: 5px;">Digital Freedom</div>
+      </div>
       <div style="text-align: center">
-        <img :src="qrCodeUrl" alt="QR Code" style="max-width: 100%; height: auto; border: 1px solid #eee; padding: 10px;" />
-        <p style="margin-top: 10px; font-size: 12px; color: #666;">Scan with Shadowrocket or other VPN apps</p>
+        <img :src="qrCodeUrl" alt="QR Code" style="max-width: 100%; height: auto; border: 1px solid #eee; padding: 10px; border-radius: 8px;" />
+        <p style="margin-top: 15px; font-size: 13px; color: #666;">Scan with Shadowrocket or other VPN apps</p>
+        
+        <div style="margin-top: 15px; color: #F56C6C; font-weight: bold; font-size: 14px;">
+           <i class="el-icon-warning"></i> Don't Break The Rules
+        </div>
+        
+        <div style="margin-top: 5px; font-size: 10px; color: #999;">
+          * Non-refundable policy applies
+        </div>
+
+        <el-button 
+          type="primary" 
+          size="small" 
+          icon="el-icon-download" 
+          style="margin-top: 20px; width: 80%;"
+          @click="downloadQrCode">
+          Download QR Code
+        </el-button>
       </div>
     </el-dialog>
   </div>
@@ -494,6 +515,24 @@ export default {
       }
       this.qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(this.curtomShortSubUrl)}`;
       this.dialogQrCodeVisible = true;
+    },
+
+    async downloadQrCode() {
+      try {
+        const response = await fetch(this.qrCodeUrl);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'DigitalFreedom_QR.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        this.$message.success("QR Code downloaded successfully!");
+      } catch (error) {
+        this.$message.error("Download failed: " + error.message);
+      }
     },
 
     // 表单相关方法
