@@ -44,7 +44,7 @@ export class BackendService {
       if (!content || (!content.includes('proxies:') && !content.includes('- name:'))) {
         const baseUrl = import.meta.env.DEV ? '/api' : CONSTANTS.DEFAULT_BACKEND.replace(/\/sub\?$/, '');
         // REMOVED &list=true to ensure groups are included
-        const backendUrl = `${baseUrl}/sub?target=clash&url=${encodeURIComponent(subUrl)}&insert=false`;
+        const backendUrl = `${baseUrl}/sub?target=clash&url=${encodeURIComponent(subUrl)}&insert=false&ua=clash`;
 
         console.log(`Fallback to proxy: ${backendUrl}`);
         const response = await $axios.get(backendUrl, { timeout: 20000 });
