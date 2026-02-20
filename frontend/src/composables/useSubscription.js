@@ -90,7 +90,7 @@ export function useSubscription() {
 
     // 自动清理 & 过滤参数 (Exclude)
     // Always hide status nodes (GB, Expiry, etc.)
-    const autoExclude = "(重置|剩余|流量|到期|GB|MB|官网|更-新|线路|bing)";
+    const autoExclude = "(到期|GB|expire)";
     let excludeRules = form.excludeRemarks || "";
     if (excludeRules) {
       // Avoid duplicating if already present

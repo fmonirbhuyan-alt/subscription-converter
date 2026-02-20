@@ -121,9 +121,7 @@ export class BackendService {
       const groupNames = [];
 
       const blacklist = [
-        "DIRECT", "REJECT", "Selector", "URLTest", "Fallback", "LoadBalance",
-        "距离下次重置剩余", "重置", "剩余", "到期", "流量", "GB", "MB", "条线路", "过滤掉",
-        "www.bing.com", "ipv6免流", "请自行修改host", "GLOBAL"
+        "到期", "GB"
       ];
 
       // Format 1: Clash YAML
