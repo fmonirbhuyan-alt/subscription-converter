@@ -97,15 +97,12 @@ You'll get a URL like: `https://subscription-converter-worker.YOUR_SUBDOMAIN.wor
 
 ### Step 1: Update Frontend Configuration
 
-1. Open `frontend/src/views/Subconverter.vue` (or similar config file)
-2. Find the API endpoint configuration
-3. Update to: `https://api.digital-freedom.site`
-
-Alternatively, create `.env` file in `frontend/`:
+1. Open `frontend/.env`
+2. Update the following variables to point to your domain:
 
 ```env
-VUE_APP_API_URL=https://api.digital-freedom.site
-VUE_APP_SITE_NAME=Digital Freedom
+VITE_SUBCONVERTER_DEFAULT_BACKEND="https://api.digital-freedom.site"
+VITE_MYURLS_API="https://api.digital-freedom.site/short"
 ```
 
 ### Step 2: Push to GitHub

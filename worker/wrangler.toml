@@ -12,7 +12,7 @@ workers_dev = true
 
 # Environment variables
 [vars]
-BACKEND_URL = "https://YOUR_RENDER_APP.onrender.com"
+BACKEND_URL = "https://digital-freedom-backend.onrender.com"
 
 # Build configuration
 [build]

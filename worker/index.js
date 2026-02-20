@@ -3,8 +3,8 @@ import { Router } from 'itty-router';
 // Create a new router
 const router = Router();
 
-// Backend subconverter URL (will be deployed on Render.com)
-const BACKEND_URL = 'https://digital-freedom-backend.onrender.com';
+// Backend subconverter URL (will be configured in wrangler.toml)
+// const BACKEND_URL = 'https://digital-freedom-backend.onrender.com';
 
 // CORS headers
 const corsHeaders = {
@@ -28,12 +28,12 @@ function handleOptions() {
 /**
  * Proxy request to backend subconverter
  */
-async function proxyToBackend(request) {
+async function proxyToBackend(request, env) {
     try {
         const url = new URL(request.url);
 
-        // Build backend URL with query parameters
-        const backendUrl = `${BACKEND_URL}${url.pathname}${url.search}`;
+        // Build backend URL with query parameters using environment variable
+        const backendUrl = `${env.BACKEND_URL}${url.pathname}${url.search}`;
 
         // Check cache first
         const cache = caches.default;
@@ -105,13 +105,13 @@ async function proxyToBackend(request) {
 /**
  * Health check endpoint
  */
-function handleHealthCheck() {
+function handleHealthCheck(request, env) {
     return new Response(
         JSON.stringify({
             status: 'ok',
             service: 'Digital Freedom Subscription Converter',
             version: '1.0.0',
-            backend: BACKEND_URL,
+            backend: env.BACKEND_URL,
         }),
         {
             headers: {
