@@ -480,8 +480,7 @@ export default {
 
     smartClean() {
       const junkPatterns = [
-        "重置", "剩余", "流量", "到期", "GB", "MB", 
-        "官网", "更-新", "线路", "bing"
+        "到期", "GB"
       ];
       
       const regex = `(${junkPatterns.join('|')})`;
