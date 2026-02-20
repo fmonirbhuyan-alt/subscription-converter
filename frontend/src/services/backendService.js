@@ -92,12 +92,12 @@ export class BackendService {
       }
 
       // Handle Base64 encoded content
-      if (!content.includes('proxies:') && !content.includes('- name:')) {
+      if (!content.includes('proxies:') && !content.includes('- name:') && !content.includes('://')) {
         try {
           const trimmed = content.trim().replace(/\s/g, '');
-          if (trimmed.length > 50 && /^[A-Za-z0-9+/=]+$/.test(trimmed)) {
+          if (trimmed.length > 30 && /^[A-Za-z0-9+/=]+$/.test(trimmed)) {
             const decoded = atob(trimmed);
-            if (decoded && (decoded.includes('proxies:') || decoded.includes('- name:') || decoded.includes('://'))) {
+            if (this.isValidContent(decoded)) {
               addLog("Detected and decoded Base64 content.");
               content = decoded;
             }
@@ -107,44 +107,78 @@ export class BackendService {
         }
       }
 
-      if (!this.isValidContent(content)) {
-        const snippet = content.substring(0, 100).replace(/\n/g, ' ');
-        throw new Error(`Invalid subscription format. Content snippet: "${snippet}..."`);
+      if (this.isHtml(content)) {
+        throw new Error("Received HTML instead of subscription. The provider might be blocking the request or requiring a login.");
       }
 
-      // Parsing logic to separate proxies and groups
+      if (!this.isValidContent(content)) {
+        const snippet = content.substring(0, 50).replace(/\n/g, ' ');
+        throw new Error(`Invalid subscription format. Content preview: "${snippet}..."`);
+      }
+
+      // Parsing logic
       const proxyNames = [];
       const groupNames = [];
 
       const blacklist = [
         "DIRECT", "REJECT", "Selector", "URLTest", "Fallback", "LoadBalance",
         "距离下次重置剩余", "重置", "剩余", "到期", "流量", "GB", "MB", "条线路", "过滤掉",
-        "www.bing.com", "ipv6免流", "请自行修改host"
+        "www.bing.com", "ipv6免流", "请自行修改host", "GLOBAL"
       ];
 
-      // Simple block detection
-      const proxySection = content.split('proxy-groups:')[0];
-      const groupsSection = content.split('proxy-groups:')[1] || "";
+      // Format 1: Clash YAML
+      const isYaml = content.includes('proxies:') || content.includes('proxy-groups:');
+      if (isYaml) {
+        addLog("Parsing as Clash YAML...");
+        const sections = content.split('proxy-groups:');
+        const proxySection = sections[0];
+        const groupsSection = sections[1] || "";
 
-      const regex = /name:\s*['"]?([^'"},\n\r]+)['"]?/g;
-      let match;
+        const regex = /name:\s*['"]?([^'"},\n\r\t]+)['"]?/g;
+        let match;
 
-      // Extract proxies
-      while ((match = regex.exec(proxySection)) !== null) {
-        const name = match[1].trim();
-        if (name && !blacklist.some(item => name.includes(item)) && !proxyNames.includes(name)) {
-          proxyNames.push(name);
+        while ((match = regex.exec(proxySection)) !== null) {
+          const name = match[1].trim();
+          if (name && !blacklist.some(item => name === item || name.includes(item)) && !proxyNames.includes(name)) {
+            proxyNames.push(name);
+          }
+        }
+
+        while ((match = regex.exec(groupsSection)) !== null) {
+          const name = match[1].trim();
+          if (name && !blacklist.some(item => name === item) && !groupNames.includes(name)) {
+            groupNames.push(name);
+          }
         }
       }
 
-      // Extract groups
-      const groupRegex = /name:\s*['"]?([^'"},\n\r]+)['"]?/g;
-      while ((match = groupRegex.exec(groupsSection)) !== null) {
-        const name = match[1].trim();
-        if (name && !blacklist.some(item => name === item) && !groupNames.includes(name)) {
-          groupNames.push(name);
+      // Format 2: Raw Protocol List (SS/SSR/VMess/VLESS/Trojan)
+      // Attempt to parse line by line if YAML yielded nothing or if protocols are prevalent
+      if (proxyNames.length === 0 || content.includes('://')) {
+        addLog("Checking for raw proxy protocols...");
+        const lines = content.split(/\r?\n/);
+        for (let line of lines) {
+          line = line.trim();
+          if (!line) continue;
+
+          // Pattern for links often followed by #name
+          const hashMatch = line.match(/#(.*)$/);
+          if (hashMatch) {
+            let name = "";
+            try {
+              name = decodeURIComponent(hashMatch[1]);
+            } catch (e) {
+              name = hashMatch[1];
+            }
+
+            if (name && !blacklist.some(item => name.includes(item)) && !proxyNames.includes(name)) {
+              proxyNames.push(name);
+            }
+          }
         }
       }
+
+      addLog(`Parsing complete. Found ${proxyNames.length} nodes and ${groupNames.length} groups.`);
 
       return {
         nodes: proxyNames,
@@ -157,15 +191,24 @@ export class BackendService {
   }
 
   /**
-   * Simple validation for YAML/Clash or SS/SSR/V2Ray list
+   * Simple validation for YAML/Clash or proxy lists
    */
   static isValidContent(content) {
     if (!content || typeof content !== 'string') return false;
+    if (this.isHtml(content)) return false;
     const c = content.trim();
     return c.includes('proxies:') ||
       c.includes('- name:') ||
       c.includes('ssr://') ||
       c.includes('vmess://') ||
-      c.includes('trojan://');
+      c.includes('vless://') ||
+      c.includes('trojan://') ||
+      c.includes('ss://');
+  }
+
+  static isHtml(content) {
+    if (!content || typeof content !== 'string') return false;
+    const c = content.trim().toLowerCase();
+    return (c.includes('<!doctype') || c.includes('<html') || c.includes('<body') || c.includes('<div')) && (c.includes('</html>') || c.includes('</body>'));
   }
 }
