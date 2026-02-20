@@ -32,54 +32,84 @@ export class BackendService {
    * @returns {Promise<Array<string>>} List of node names
    */
   static async getNodes($axios, subUrl) {
+    const logs = [];
+    const addLog = (msg) => {
+      console.log(`[Scan] ${msg}`);
+      logs.push(msg);
+    };
+
     try {
       let content = "";
 
       // 1. Try direct fetch (ONLY in development mode)
       if (import.meta.env.DEV) {
+        addLog("Attempting Direct Fetch (DEV ONLY)...");
         try {
           const response = await $axios.get(subUrl, { timeout: 10000 });
           content = response.data;
+          if (content) addLog("Direct Fetch success.");
         } catch (e) {
-          console.log("Direct fetch failed in DEV, falling back to proxy.");
+          addLog(`Direct Fetch failed: ${e.message}`);
         }
       }
 
-      // 2. Try primary backend proxy if direct fetch failed
-      if (!content || (!content.includes('proxies:') && !content.includes('- name:'))) {
+      // 2. Try primary backend proxy
+      if (!this.isValidContent(content)) {
         const baseUrl = import.meta.env.DEV ? '/api' : CONSTANTS.DEFAULT_BACKEND.replace(/\/sub\?$/, '');
         const backendUrl = `${baseUrl}/sub?target=clash&url=${encodeURIComponent(subUrl)}&insert=false&ua=clash`;
 
-        console.log(`[Scan] Attempting Backend Proxy: ${backendUrl}`);
+        addLog(`Attempting Backend Proxy: ${baseUrl}`);
         try {
           const response = await $axios.get(backendUrl, { timeout: 15000 });
           content = response.data;
+          if (content) addLog("Backend Proxy success.");
         } catch (e) {
-          console.warn(`[Scan] Backend proxy failed: ${e.message}`);
+          addLog(`Backend Proxy failed: ${e.message}`);
         }
       }
 
-      // 3. Fallback to a public CORS Proxy (allorigins) if previous attempts failed
-      // This is very robust for browser-to-external requests
-      if (!content || (!content.includes('proxies:') && !content.includes('- name:'))) {
+      // 3. Fallback to a public CORS Proxy (allorigins)
+      if (!this.isValidContent(content)) {
         const corsProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(subUrl)}`;
-        console.log(`[Scan] Falling back to Public CORS Proxy: ${corsProxyUrl}`);
+        addLog("Attempting Public CORS Proxy (allorigins)...");
 
         try {
-          // Use fetch for the public proxy to bypass any axios-specific global transforms
           const resp = await fetch(corsProxyUrl);
           if (resp.ok) {
             content = await resp.text();
+            addLog("Public CORS Proxy success.");
           } else {
-            console.error(`[Scan] Public CORS Proxy returned status: ${resp.status}`);
+            addLog(`Public CORS Proxy error status: ${resp.status}`);
           }
         } catch (e) {
-          console.error(`[Scan] Public CORS Proxy failed: ${e.message}`);
+          addLog(`Public CORS Proxy failed: ${e.message}`);
         }
       }
 
-      if (!content || (!content.includes('proxies:') && !content.includes('- name:'))) {
-        throw new Error("Empty or invalid subscription content received from all sources.");
+      // FINAL VALIDATION & DECODING
+      if (!content || typeof content !== 'string') {
+        throw new Error(`Failed to fetch content. Attempts: ${logs.join(' -> ')}`);
+      }
+
+      // Handle Base64 encoded content
+      if (!content.includes('proxies:') && !content.includes('- name:')) {
+        try {
+          const trimmed = content.trim().replace(/\s/g, '');
+          if (trimmed.length > 50 && /^[A-Za-z0-9+/=]+$/.test(trimmed)) {
+            const decoded = atob(trimmed);
+            if (decoded && (decoded.includes('proxies:') || decoded.includes('- name:') || decoded.includes('://'))) {
+              addLog("Detected and decoded Base64 content.");
+              content = decoded;
+            }
+          }
+        } catch (e) {
+          addLog("Content is not Base64 or decoding failed.");
+        }
+      }
+
+      if (!this.isValidContent(content)) {
+        const snippet = content.substring(0, 100).replace(/\n/g, ' ');
+        throw new Error(`Invalid subscription format. Content snippet: "${snippet}..."`);
       }
 
       // Parsing logic to separate proxies and groups
@@ -111,7 +141,6 @@ export class BackendService {
       const groupRegex = /name:\s*['"]?([^'"},\n\r]+)['"]?/g;
       while ((match = groupRegex.exec(groupsSection)) !== null) {
         const name = match[1].trim();
-        // Be less aggressive with group names, as the user wants to rename them
         if (name && !blacklist.some(item => name === item) && !groupNames.includes(name)) {
           groupNames.push(name);
         }
@@ -122,8 +151,21 @@ export class BackendService {
         groups: groupNames
       };
     } catch (error) {
-      console.error("Failed to scan nodes:", error);
-      throw new Error("Could not fetch or parse subscription. Please check if the link is valid.");
+      console.error("[Scan Service Error]", error);
+      throw error;
     }
+  }
+
+  /**
+   * Simple validation for YAML/Clash or SS/SSR/V2Ray list
+   */
+  static isValidContent(content) {
+    if (!content || typeof content !== 'string') return false;
+    const c = content.trim();
+    return c.includes('proxies:') ||
+      c.includes('- name:') ||
+      c.includes('ssr://') ||
+      c.includes('vmess://') ||
+      c.includes('trojan://');
   }
 }
