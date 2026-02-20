@@ -30,7 +30,8 @@ export function useSubscription() {
       "&scv=" + form.scv.toString() +
       "&fdn=" + form.fdn.toString() +
       "&expand=" + form.expand.toString() +
-      "&sort=" + form.sort.toString();
+      "&sort=" + form.sort.toString() +
+      "&fpg=" + form.fpg.toString();
   };
 
   /**
@@ -82,14 +83,63 @@ export function useSubscription() {
       params += "&config=" + encodeURIComponent(form.remoteConfig);
     }
 
-    // 过滤参数
-    if (form.excludeRemarks) {
-      params += "&exclude=" + encodeURIComponent(form.excludeRemarks);
-    }
+    // 过滤参数 (Include)
     if (form.includeRemarks) {
       params += "&include=" + encodeURIComponent(form.includeRemarks);
     }
 
+    // 自动清理 & 过滤参数 (Exclude)
+    // Always hide status nodes (GB, Expiry, etc.)
+    const autoExclude = "(重置|剩余|流量|到期|GB|MB|官网|更-新|线路|bing)";
+    let excludeRules = form.excludeRemarks || "";
+    if (excludeRules) {
+      // Avoid duplicating if already present
+      if (!excludeRules.includes(autoExclude)) {
+        excludeRules += "|" + autoExclude;
+      }
+    } else {
+      excludeRules = autoExclude;
+    }
+    params += "&exclude=" + encodeURIComponent(excludeRules);
+
+    // 自动重命名 & Global Rename (reg_subs)
+    // Default mappings for common Chinese group names
+    const defaultRenames = [
+      "节点选择@Node Select",
+      "自动选择@Auto Select",
+      "国外媒体@Global Media",
+      "国内媒体@Domestic Media",
+      "微软服务@Microsoft",
+      "电报信息@Telegram",
+      "苹果服务@Apple",
+      "全球直连@Direct",
+      "全球拦截@Reject",
+      "漏网之鱼@Final"
+    ];
+
+    let regSubsParts = [...defaultRenames];
+
+    // Add user defined global renames if any
+    if (form.globalFindValue && form.globalReplaceValue) {
+      const gLines = form.globalFindValue.split('\n').map(line => line.trim()).filter(line => line !== '');
+      if (gLines.length > 0) {
+        const gPart = gLines.join('|');
+        regSubsParts.push(`(${gPart})@${form.globalReplaceValue}`);
+      }
+    }
+
+    if (regSubsParts.length > 0) {
+      params += `&reg_subs=${encodeURIComponent(regSubsParts.join('|'))}`;
+    }
+
+    if (form.findValue && form.replaceValue) {
+      const findLines = form.findValue.split('\n').map(line => line.trim()).filter(line => line !== '');
+      if (findLines.length > 0) {
+        const findPart = findLines.join('|');
+        const renameRule = `(${findPart})@${form.replaceValue}`;
+        params += `&rename=${encodeURIComponent(renameRule)}`;
+      }
+    }
     // 文件名
     if (form.filename) {
       params += "&filename=" + encodeURIComponent(form.filename);
@@ -101,7 +151,11 @@ export function useSubscription() {
     }
 
     // 基础布尔参数
+    // Always enable fpg (Filter Proxy Groups) when auto-cleaning to hide empty groups
+    const originalFpg = form.fpg;
+    form.fpg = true;
     params += buildBooleanParams(form);
+    form.fpg = originalFpg; // Restore state
 
     // UDP 参数
     if (needUdp) {

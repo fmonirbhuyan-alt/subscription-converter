@@ -19,6 +19,49 @@
                 <el-input v-model="form.sourceSubUrl" type="textarea" rows="3"
                   placeholder="Supports subscriptions or ss/ssr/vmess links. Multiple links per line or separated by |" @blur="saveSubUrl" />
               </el-form-item>
+
+              <el-form-item label="Node Scan:">
+                <el-button type="primary" icon="el-icon-search" @click="scanNodes" :loading="scanLoading">Scan Now</el-button>
+              </el-form-item>
+
+              <div v-if="form.scannedNodes.length > 0 || form.scannedGroups.length > 0" style="margin-bottom: 20px;">
+                <el-row :gutter="20">
+                  <el-col :span="8">
+                    <el-card class="box-card" shadow="never" style="height: 400px; overflow-y: auto;">
+                      <div slot="header" class="clearfix">
+                        <span>Scan Results</span>
+                      </div>
+                      
+                      <div v-if="form.scannedGroups.length > 0">
+                        <div style="font-size: 14px; font-weight: bold; padding: 5px; color: #67C23A; border-bottom: 1px solid #eee;">Detected Groups</div>
+                        <div v-for="(group, index) in form.scannedGroups" :key="'g'+index" class="text item" style="margin-bottom: 5px; display: flex; align-items: center;">
+                          <el-button type="text" icon="el-icon-plus" @click="addToGlobalFind(group)" style="padding: 0; color: #67C23A;" title="Add to Global Find"></el-button>
+                          <span style="font-size: 12px; margin-left: 5px;">{{ group }}</span>
+                        </div>
+                      </div>
+
+                      <div v-if="form.scannedNodes.length > 0" style="margin-top: 15px;">
+                        <div style="font-size: 14px; font-weight: bold; padding: 5px; color: #409EFF; border-bottom: 1px solid #eee;">Server Nodes ({{ form.scannedNodes.length }})</div>
+                        <div v-for="(node, index) in form.scannedNodes" :key="'n'+index" class="text item" style="margin-bottom: 5px;">
+                          <el-button type="text" icon="el-icon-plus" @click="addToFind(node)" style="padding: 0; margin-right: 5px;" title="Add to Proxy Rename"></el-button>
+                          <el-button type="text" icon="el-icon-minus" @click="addToExclude(node)" style="padding: 0; margin-right: 5px; color: #F56C6C;" title="Exclude Node"></el-button>
+                          <span style="font-size: 12px;">{{ node }}</span>
+                        </div>
+                      </div>
+                    </el-card>
+                  </el-col>
+                  <el-col :span="8">
+                    <div style="font-weight: bold; margin-bottom: 10px; font-size: 13px; color: #606266;">Node Rename (Proxies)</div>
+                    <el-input type="textarea" :rows="8" v-model="form.findValue" placeholder="Names (e.g. 美国1)"></el-input>
+                    <el-input v-model="form.replaceValue" placeholder="Replace with..." style="margin-top: 5px;"></el-input>
+                  </el-col>
+                  <el-col :span="8">
+                    <div style="font-weight: bold; margin-bottom: 10px; font-size: 13px; color: #67C23A;">Global Rename (Groups/Text)</div>
+                    <el-input type="textarea" :rows="8" v-model="form.globalFindValue" placeholder="Groups (e.g. 自动选择)"></el-input>
+                    <el-input v-model="form.globalReplaceValue" placeholder="Replace with..." style="margin-top: 5px;"></el-input>
+                  </el-col>
+                </el-row>
+              </div>
               <el-form-item label="Client:">
                 <el-select v-model="form.clientType" style="width: 100%">
                   <el-option v-for="(v, k) in options.clientTypes" :key="k" :label="k" :value="v"></el-option>
@@ -83,6 +126,9 @@
                       </el-row>
                       <el-row>
                         <el-checkbox v-model="form.fdn" label="Filter Nodes"></el-checkbox>
+                      </el-row>
+                      <el-row>
+                        <el-checkbox v-model="form.fpg" label="Filter Groups"></el-checkbox>
                       </el-row>
                       <el-row>
                         <el-checkbox v-model="form.expand" label="Rule Expand"></el-checkbox>
@@ -277,6 +323,7 @@ export default {
       // 状态
       backendVersion: "",
       loading: false,
+      scanLoading: false,
       curtomShortSubUrl: "",
       dialogUploadConfigVisible: false,
       loadConfig: "",
@@ -334,11 +381,6 @@ export default {
   mounted() {
     this.form.clientType = CONSTANTS.DEFAULT_CLIENT_TYPE;
     this.getBackendVersion();
-    
-    // 延迟加载隐私提示，避免阻塞页面初始化
-    setTimeout(() => {
-      this.notify();
-    }, 1000);
   },
   methods: {
     onCopy() {
@@ -405,6 +447,91 @@ export default {
         .finally(() => {
           this.loading = false;
         });
+    },
+
+    scanNodes() {
+      if (!this.processedSubUrl) {
+        this.$message.warning("Please enter a valid subscription link");
+        return false;
+      }
+
+      this.scanLoading = true;
+      this.form.scannedNodes = [];
+      this.form.scannedGroups = [];
+
+      BackendService.getNodes(this.$axios, this.processedSubUrl)
+        .then(res => {
+          this.form.scannedNodes = res.nodes;
+          this.form.scannedGroups = res.groups;
+          
+          if (res.nodes.length > 0 || res.groups.length > 0) {
+            this.$message.success(`Scanned ${res.nodes.length} nodes and ${res.groups.length} groups.`);
+          } else {
+            this.$message.info("No nodes or groups found.");
+          }
+        })
+        .catch(err => {
+          this.$message.error("Scan failed: " + err.message);
+        })
+        .finally(() => {
+          this.scanLoading = false;
+        });
+    },
+
+    smartClean() {
+      const junkPatterns = [
+        "重置", "剩余", "流量", "到期", "GB", "MB", 
+        "官网", "更-新", "线路", "bing"
+      ];
+      
+      const regex = `(${junkPatterns.join('|')})`;
+      
+      if (this.form.excludeRemarks) {
+        if (!this.form.excludeRemarks.includes(regex)) {
+           this.form.excludeRemarks += "|" + regex;
+        }
+      } else {
+        this.form.excludeRemarks = regex;
+      }
+      
+      this.form.fpg = true; // Auto-enable Filter Proxy Groups
+      this.$message.success("Smart Clean applied!");
+      
+      if (this.form.scannedNodes.length === 0) {
+        this.scanNodes();
+      }
+    },
+
+    addToFind(nodeName) {
+      if (this.form.findValue) {
+        this.form.findValue += "\n" + nodeName;
+      } else {
+        this.form.findValue = nodeName;
+      }
+    },
+
+    addToGlobalFind(name) {
+      if (this.form.globalFindValue) {
+        this.form.globalFindValue += "\n" + name;
+      } else {
+        this.form.globalFindValue = name;
+      }
+    },
+
+    addToExclude(nodeName) {
+      // Escape special regex characters to ensure literal matching
+      const escapedNodeName = nodeName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      
+      if (this.form.excludeRemarks) {
+        // Only add if not already present
+        const currentExcludes = this.form.excludeRemarks.split('|');
+        if (!currentExcludes.includes(escapedNodeName)) {
+           this.form.excludeRemarks += "|" + escapedNodeName;
+        }
+      } else {
+        this.form.excludeRemarks = escapedNodeName;
+      }
+      this.$message.info(`Added "${nodeName}" to Exclude list.`);
     },
 
     confirmUploadConfig() {

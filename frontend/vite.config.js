@@ -17,6 +17,16 @@ export default defineConfig({
         }
     },
     server: {
-        host: '0.0.0.0'
+        host: '0.0.0.0',
+        proxy: {
+            '/api': {
+                target: 'https://api.digital-freedom.site',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api/, ''),
+                headers: {
+                    'User-Agent': 'Clash/1.0' // Mock user agent to bypass access denied
+                }
+            }
+        }
     }
 })

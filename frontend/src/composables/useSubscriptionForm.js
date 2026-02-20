@@ -27,6 +27,17 @@ export function useSubscriptionForm() {
       appendType: false,
       insert: false, // 是否插入默认订阅的节点，对应配置项 insert_url
       new_name: true, // 是否使用 Clash 新字段
+      fpg: false, // 过滤空节点组
+
+      // Node Name Replacement State
+      scannedNodes: [],
+      scannedGroups: [],
+      findValue: "",
+      replaceValue: "",
+
+      // Global Rename State (reg_subs)
+      globalFindValue: "",
+      globalReplaceValue: "",
 
       // tpl 定制功能
       tpl: {
