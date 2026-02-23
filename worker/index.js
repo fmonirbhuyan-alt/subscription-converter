@@ -195,7 +195,10 @@ export default {
                     return new Response(combinedText, { status: 200, headers: fallbackHeaders });
                 }
             } catch (e) {
-                // Ignore fallback error and proceed to Gateway Error
+                return new Response('Fallback Error: ' + e.message + '\nStack: ' + e.stack, {
+                    status: 503,
+                    headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' }
+                });
             }
         }
 
