@@ -57,7 +57,11 @@ export default {
             try {
                 const formData = await request.formData();
                 const rawLongUrl = formData.get('longUrl');
-                const longUrl = tryDecode(rawLongUrl) || rawLongUrl;
+                // The frontend passes a base64 encoded string OR a raw string. 
+                // We must decode it if it's base64 so in KV it looks like /sub?target=...
+                let longUrl = tryDecode(rawLongUrl);
+                if (!longUrl) longUrl = rawLongUrl;
+
                 const code = Math.random().toString(36).substring(2, 7);
                 if (env.SHORT_URL_STORAGE) {
                     await env.SHORT_URL_STORAGE.put(code, longUrl);
@@ -70,7 +74,23 @@ export default {
 
         // 4. Subscription Proxy Logic
         if (finalLongUrl) {
-            const targetUrl = new URL(finalLongUrl);
+            // When building the target URL, we first assume finalLongUrl is already the correct subconverter URL structure.
+            let targetUrlString = finalLongUrl;
+
+            // If the stored URL is just the bare subscription link (because it was decoded previously or entered manually)
+            // we wrap it in the subconverter query format so the rest of the code works uniformly.
+            if (!finalLongUrl.includes('url=')) {
+                targetUrlString = `/?url=${encodeURIComponent(finalLongUrl)}`;
+            }
+
+            let targetUrl;
+            try {
+                // Determine base using request url so it parses correctly
+                targetUrl = new URL(targetUrlString, request.url);
+            } catch (e) {
+                targetUrl = new URL(request.url);
+                targetUrl.searchParams.set('url', targetUrlString);
+            }
 
             // PRESERVE QUERY PARAMS: if the user agent / app appended query string (like target=clash) 
             // to the shortlink, we need to apply them to our targetUrl so the backend knows what to return.
@@ -78,15 +98,26 @@ export default {
                 targetUrl.searchParams.set(key, value);
             }
 
-            const targetParam = targetUrl.searchParams.get('target') || 'v2ray';
+            console.log("---- DEBUG OUTPUT ----");
+            console.log("finalLongUrl from KV: ", finalLongUrl);
+            console.log("targetUrlString: ", targetUrlString);
+            console.log("targetUrl.href: ", targetUrl.href);
 
-            const buildHeaders = () => {
+            const targetParam = targetUrl.searchParams.get('target') || 'v2ray';
+            console.log("Resolved targetParam: ", targetParam);
+            console.log("----------------------");
+
+            const buildHeaders = (customUserinfo, isClash) => {
                 const h = new Headers();
                 h.set('Access-Control-Allow-Origin', '*');
                 h.set('Content-Type', 'text/plain; charset=utf-8');
                 h.set('Cache-Control', 'no-store');
-                h.set('Content-Disposition', `attachment; filename="config.txt"`);
-                h.set('Subscription-Userinfo', 'upload=0;download=0;total=10995116277760;expire=1893456000');
+                h.set('Content-Disposition', isClash ? `attachment; filename="config.yaml"` : `attachment; filename="config.txt"`);
+                if (customUserinfo) {
+                    h.set('Subscription-Userinfo', customUserinfo);
+                } else {
+                    h.set('Subscription-Userinfo', 'upload=0;download=0;total=10995116277760;expire=1893456000');
+                }
                 h.set('Profile-Update-Interval', '6');
                 return h;
             };
@@ -106,11 +137,8 @@ export default {
                             finalBody = safeB64(decoded || finalBody);
                         }
 
-                        const h = buildHeaders();
                         const realUserinfo = res.headers.get('subscription-userinfo');
-                        if (realUserinfo) {
-                            h.set('Subscription-Userinfo', realUserinfo);
-                        }
+                        const h = buildHeaders(realUserinfo, targetParam === 'clash');
 
                         return new Response(finalBody, { status: 200, headers: h });
                     }
@@ -134,10 +162,7 @@ export default {
                         let finalBody = combined.trim();
                         if (targetParam !== 'clash') finalBody = safeB64(finalBody);
 
-                        const h = buildHeaders();
-                        if (realUserinfo) {
-                            h.set('Subscription-Userinfo', realUserinfo);
-                        }
+                        const h = buildHeaders(realUserinfo, targetParam === 'clash');
 
                         return new Response(finalBody, { status: 200, headers: h });
                     }
