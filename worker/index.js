@@ -98,7 +98,14 @@ export default {
                             const decoded = tryDecode(finalBody);
                             finalBody = safeB64(decoded || finalBody);
                         }
-                        return new Response(finalBody, { status: 200, headers: buildHeaders() });
+
+                        const h = buildHeaders();
+                        const realUserinfo = res.headers.get('subscription-userinfo');
+                        if (realUserinfo) {
+                            h.set('Subscription-Userinfo', realUserinfo);
+                        }
+
+                        return new Response(finalBody, { status: 200, headers: h });
                     }
                 } catch (e) { continue; }
             }
@@ -108,14 +115,24 @@ export default {
             if (rawUrlParam) {
                 try {
                     let combined = '';
+                    let realUserinfo = null;
                     for (const u of rawUrlParam.split('|')) {
                         const r = await fetch(u, { headers: { 'User-Agent': 'v2rayNG/1.8.8' } });
-                        if (r.ok) combined += (await r.text()) + '\n';
+                        if (r.ok) {
+                            combined += (await r.text()) + '\n';
+                            if (!realUserinfo) realUserinfo = r.headers.get('subscription-userinfo');
+                        }
                     }
                     if (combined.trim()) {
                         let finalBody = combined.trim();
                         if (targetParam !== 'clash') finalBody = safeB64(finalBody);
-                        return new Response(finalBody, { status: 200, headers: buildHeaders() });
+
+                        const h = buildHeaders();
+                        if (realUserinfo) {
+                            h.set('Subscription-Userinfo', realUserinfo);
+                        }
+
+                        return new Response(finalBody, { status: 200, headers: h });
                     }
                 } catch (e) { }
             }
