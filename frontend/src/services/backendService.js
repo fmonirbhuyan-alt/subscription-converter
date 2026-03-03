@@ -52,7 +52,7 @@ export class BackendService {
 
         console.log(`Scanning via Clash List: ${backendUrl}`);
         const response = await $axios.get(backendUrl, { timeout: 30000 });
-        content = response.data;
+        content = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
       }
 
       const proxyNames = [];

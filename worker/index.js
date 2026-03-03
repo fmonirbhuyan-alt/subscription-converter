@@ -265,7 +265,7 @@ async function proxyToBackend(request, env) {
                     console.log(`Direct fetch successful. Content length: ${data.length}`);
                     const h = new Headers();
                     h.set("Access-Control-Allow-Origin", "*");
-                    h.set("Content-Type", "application/yaml; charset=utf-8");
+                    h.set("Content-Type", "text/plain; charset=utf-8");
                     h.set("Content-Disposition", `attachment; filename=${filename}`);
                     h.set("Profile-Title", filename);
 
@@ -613,7 +613,7 @@ async function handleAdminToggle(request, env) {
  */
 function handleVersion(request, env) {
     return new Response("subconverter v2.4-stable", {
-        headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Origin': '*' }
+        headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' }
     });
 }
 

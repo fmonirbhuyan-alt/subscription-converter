@@ -94,7 +94,7 @@ export function useSubscription() {
     let excludeRules = form.excludeRemarks || "";
     if (excludeRules) {
       // Avoid duplicating if already present
-      if (!excludeRules.includes("到期") && !excludeRules.includes("GB")) {
+      if (!excludeRules.includes(autoExclude)) {
         excludeRules += "|" + autoExclude;
       }
     } else {

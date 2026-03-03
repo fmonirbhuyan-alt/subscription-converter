@@ -25,10 +25,10 @@ export function useSubscriptionForm() {
       fdn: false,
       expand: true,
       appendType: false,
-      insert: false,
-      new_name: true,
-      fpg: false,
-      devLock: false, // Device Lock
+      insert: false, // 是否插入默认订阅的节点，对应配置项 insert_url
+      new_name: true, // 是否使用 Clash 新字段
+      fpg: false, // 过滤空节点组
+      devLock: false, // 设备锁
 
       // Node Name Replacement State
       scannedNodes: [],
