@@ -20,7 +20,7 @@ export default defineConfig({
         host: '0.0.0.0',
         proxy: {
             '/api': {
-                target: 'https://sub.digital-freedom.site',
+                target: 'https://api.digital-freedom.site',
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api/, ''),
                 headers: {
