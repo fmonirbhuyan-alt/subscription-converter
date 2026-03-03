@@ -1,7 +1,7 @@
 import { setLocalStorageItem } from '@/utils/storage';
 
 /**
- * 订阅表单状态管理 - 为Vue 2 Options API设计
+ * 订阅表单状态 management
  */
 export function useSubscriptionForm() {
   // 返回响应式数据和方法的集合
@@ -25,13 +25,10 @@ export function useSubscriptionForm() {
       fdn: false,
       expand: true,
       appendType: false,
-      insert: false, // 是否插入默认订阅的节点，对应配置项 insert_url
-      new_name: true, // 是否使用 Clash 新字段
-      fpg: false, // 过滤空节点组
-<<<<<<< HEAD
-=======
-      devLock: false, // 设备锁
->>>>>>> 62a8b61 (Final live update: Branding, rename presets, user-agent fix, and bundled worker code)
+      insert: false,
+      new_name: true,
+      fpg: false,
+      devLock: false, // Device Lock
 
       // Node Name Replacement State
       scannedNodes: [],
@@ -46,7 +43,7 @@ export function useSubscriptionForm() {
       // tpl 定制功能
       tpl: {
         surge: {
-          doh: false // dns 查询是否使用 DoH
+          doh: false
         },
         clash: {
           doh: false

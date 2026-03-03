@@ -90,23 +90,16 @@ export function useSubscription() {
 
     // 自动清理 & 过滤参数 (Exclude)
     // Always hide status nodes (GB, Expiry, etc.)
-<<<<<<< HEAD
-    const autoExclude = "(到期|GB|expire)";
-=======
     const autoExclude = "(重置|剩余|流量|到期|GB|MB|官网|更-新|线路|bing)";
->>>>>>> 62a8b61 (Final live update: Branding, rename presets, user-agent fix, and bundled worker code)
     let excludeRules = form.excludeRemarks || "";
     if (excludeRules) {
       // Avoid duplicating if already present
-      if (!excludeRules.includes(autoExclude)) {
+      if (!excludeRules.includes("到期") && !excludeRules.includes("GB")) {
         excludeRules += "|" + autoExclude;
       }
     } else {
-<<<<<<< HEAD
-=======
       // If no include filter is set, apply the auto-exclude
       // If include is set, we don't strictly need exclude but it's fine to keep
->>>>>>> 62a8b61 (Final live update: Branding, rename presets, user-agent fix, and bundled worker code)
       excludeRules = autoExclude;
     }
     params += "&exclude=" + encodeURIComponent(excludeRules);

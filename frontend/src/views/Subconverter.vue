@@ -21,11 +21,7 @@
               </el-form-item>
 
               <el-form-item label="Node Scan:">
-                <el-button type="primary" icon="el-icon-search" @click="scanNodes" :loading="scanLoading">Scan Now</el-button>
-<<<<<<< HEAD
-=======
                 <el-button v-if="advanced === '2'" type="info" icon="el-icon-user" @click="handleViewUser" :loading="syncLoading">View User</el-button>
->>>>>>> 62a8b61 (Final live update: Branding, rename presets, user-agent fix, and bundled worker code)
               </el-form-item>
 
               <div v-if="form.scannedNodes.length > 0 || form.scannedGroups.length > 0" style="margin-bottom: 20px;">
@@ -35,13 +31,8 @@
                       <div slot="header" class="clearfix">
                         <span>Scan Results</span>
                       </div>
-                      
-<<<<<<< HEAD
-                      <div v-if="form.scannedGroups.length > 0">
-=======
                       <!-- Detected Groups hidden as per user request to only show nodes -->
                       <div v-if="false && form.scannedGroups.length > 0">
->>>>>>> 62a8b61 (Final live update: Branding, rename presets, user-agent fix, and bundled worker code)
                         <div style="font-size: 14px; font-weight: bold; padding: 5px; color: #67C23A; border-bottom: 1px solid #eee;">Detected Groups</div>
                         <div v-for="(group, index) in form.scannedGroups" :key="'g'+index" class="text item" style="margin-bottom: 5px; display: flex; align-items: center;">
                           <el-button type="text" icon="el-icon-plus" @click="addToGlobalFind(group)" style="padding: 0; color: #67C23A;" title="Add to Global Find"></el-button>
@@ -60,16 +51,6 @@
                     </el-card>
                   </el-col>
                   <el-col :span="8">
-                    <div style="font-weight: bold; margin-bottom: 10px; font-size: 13px; color: #606266;">Node Rename (Proxies)</div>
-<<<<<<< HEAD
-                    <el-input type="textarea" :rows="8" v-model="form.findValue" placeholder="Names (e.g. 美国1)"></el-input>
-                    <el-input v-model="form.replaceValue" placeholder="Replace with..." style="margin-top: 5px;"></el-input>
-                  </el-col>
-                  <el-col :span="8">
-                    <div style="font-weight: bold; margin-bottom: 10px; font-size: 13px; color: #67C23A;">Global Rename (Groups/Text)</div>
-                    <el-input type="textarea" :rows="8" v-model="form.globalFindValue" placeholder="Groups (e.g. 自动选择)"></el-input>
-                    <el-input v-model="form.globalReplaceValue" placeholder="Replace with..." style="margin-top: 5px;"></el-input>
-=======
                     <el-input type="textarea" :rows="8" v-model="form.findValue" placeholder=""></el-input>
                     <el-select v-model="form.replaceValue" allow-create filterable placeholder="Select or Type" style="width: 100%; margin-top: 5px;">
                       <el-option label="Digital Freedom" value="Digital Freedom"></el-option>
@@ -83,7 +64,6 @@
                       <el-option label="Digital Freedom" value="Digital Freedom"></el-option>
                       <el-option label="DF" value="DF"></el-option>
                     </el-select>
->>>>>>> 62a8b61 (Final live update: Branding, rename presets, user-agent fix, and bundled worker code)
                   </el-col>
                 </el-row>
               </div>
@@ -435,12 +415,7 @@ export default {
       // 状态
       backendVersion: "",
       loading: false,
-      scanLoading: false,
-<<<<<<< HEAD
-      curtomShortSubUrl: "",
-=======
       customShortSubUrl: "",
->>>>>>> 62a8b61 (Final live update: Branding, rename presets, user-agent fix, and bundled worker code)
       dialogUploadConfigVisible: false,
       loadConfig: "",
       dialogLoadConfigVisible: false,
@@ -503,13 +478,10 @@ export default {
   mounted() {
     this.form.clientType = CONSTANTS.DEFAULT_CLIENT_TYPE;
     this.getBackendVersion();
-<<<<<<< HEAD
-=======
     // 延迟加载隐私提示已经被注释掉，避免弹窗
     // setTimeout(() => {
     //   this.notify();
     // }, 1000);
->>>>>>> 62a8b61 (Final live update: Branding, rename presets, user-agent fix, and bundled worker code)
   },
   methods: {
     onCopy() {
@@ -597,13 +569,10 @@ export default {
           
           if (res.nodes.length > 0 || res.groups.length > 0) {
             this.$message.success(`Scanned ${res.nodes.length} nodes and ${res.groups.length} groups.`);
-<<<<<<< HEAD
-=======
             // Automatically apply smart filter if nodes are found
             if (res.nodes.length > 0) {
               this.applySmartFilter(res.nodes);
             }
->>>>>>> 62a8b61 (Final live update: Branding, rename presets, user-agent fix, and bundled worker code)
           } else {
             this.$message.info("No nodes or groups found.");
           }
@@ -616,11 +585,6 @@ export default {
         });
     },
 
-<<<<<<< HEAD
-    smartClean() {
-      const junkPatterns = [
-        "到期", "GB"
-=======
     applySmartFilter(nodes) {
       // Escape special characters and join with | for regex
       const filterRegex = nodes
@@ -660,7 +624,6 @@ export default {
       const junkPatterns = [
         "重置", "剩余", "流量", "到期", "GB", "MB", 
         "官网", "更-新", "线路", "bing"
->>>>>>> 62a8b61 (Final live update: Branding, rename presets, user-agent fix, and bundled worker code)
       ];
       
       const regex = `(${junkPatterns.join('|')})`;
