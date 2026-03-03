@@ -6,9 +6,9 @@ compatibility_date = "2024-01-01"
 workers_dev = false
 
 # Routes for your domain
-# routes = [
-#   { pattern = "api.digital-freedom.site/*", zone_name = "digital-freedom.site" }
-# ]
+routes = [
+  { pattern = "api.digital-freedom.site/*", zone_name = "digital-freedom.site" }
+]
 
 # Environment variables
 [vars]
