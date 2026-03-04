@@ -7,7 +7,7 @@
             Digital Freedom Subscription Converter
             <svg-icon icon-class="github" style="margin-left: 20px" @click="goToProject" />
 
-            <div style="display: inline-block; position:absolute; right: 20px; font-weight: bold; color: #409EFF;">{{ backendVersion }} Advanced</div>
+            <div style="display: inline-block; position:absolute; right: 20px; font-weight: bold; color: #409EFF;">v2.8 Advanced</div>
           </div>
           <el-container>
             <el-form :model="form" label-width="140px" label-position="left" style="width: 100%">
