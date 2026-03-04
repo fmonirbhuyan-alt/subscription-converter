@@ -71,6 +71,19 @@ export class BackendService {
 
       const cleanStr = (s) => s.replace(/[\u2000-\u2BFF\u{1F000}-\u{1F9FF}]/gu, '').replace(/\s+/g, '').trim();
 
+      const safeB64Decode = (str) => {
+        try {
+          const binary = atob(str.replace(/[\s\r\n]/g, ""));
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+          }
+          return new TextDecoder().decode(bytes);
+        } catch (e) {
+          return null;
+        }
+      };
+
       try {
         let lines = content.split('\n');
         console.log(`Parser starting: ${lines.length} lines. Content starts with: ${content.substring(0, 100)}`);
@@ -80,18 +93,16 @@ export class BackendService {
         const isBase64 = firstLine.length > 50 && !firstLine.includes(':') && !firstLine.includes('://');
 
         if (isBase64) {
-          try {
-            const decoded = atob(firstLine.replace(/[\s\r\n]/g, ""));
+          const decoded = safeB64Decode(firstLine);
+          if (decoded) {
             content = decoded;
             lines = content.split('\n');
-            console.log("Detected Base64 subscription, decoded successfully.");
-          } catch (e) {
-            console.warn("Attempted Base64 decode but failed.");
+            console.log("Detected Base64 subscription, decoded successfully with UTF-8.");
           }
         }
 
-        // Regex for common share links
-        const nodeRegex = /(?:vmess|ss|vless|trojan|ssr):\/\/([^#\s\n]+)(?:#([^#\s\n]+))?/gi;
+        // Regex for common share links - Added hysteria2, wireguard, tuic support
+        const nodeRegex = /(?:vmess|ss|vless|trojan|ssr|hysteria2|wireguard|tuic):\/\/([^#\s\n]+)(?:#([^#\s\n]+))?/gi;
         const matches = [...content.matchAll(nodeRegex)];
 
         if (matches.length > 0) {
@@ -100,13 +111,20 @@ export class BackendService {
             let name = "";
             if (match[2]) {
               // Extract from #remarks
-              name = decodeURIComponent(match[2]).trim();
+              try {
+                name = decodeURIComponent(match[2]).trim();
+              } catch (e) {
+                name = match[2].trim();
+              }
             } else if (match[0].startsWith('vmess://')) {
               // Try to parse vmess JSON for 'ps' field
-              try {
-                const config = JSON.parse(atob(match[1]));
-                name = config.ps || config.add || "Unknown Vmess";
-              } catch (e) { name = "Vmess Node"; }
+              const decodedVmess = safeB64Decode(match[1]);
+              if (decodedVmess) {
+                try {
+                  const config = JSON.parse(decodedVmess);
+                  name = config.ps || config.add || "Unknown Vmess";
+                } catch (e) { name = "Vmess Node"; }
+              }
             }
 
             if (name) {

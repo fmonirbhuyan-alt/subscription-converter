@@ -21,7 +21,7 @@ ADMIN_PASSWORD = "DFAdMiN"
 # KV Namespace for Shortlinks (Matched with your Cloudflare screenshot)
 [[kv_namespaces]]
 binding = "SHORT_URL_STORAGE"
-id = "icy-cell-95f7"
+id = "11fce092ba0d45ef8d44ce4641a8f5b6"
 
 # Build configuration
 [build]

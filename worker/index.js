@@ -4,18 +4,30 @@ const Router = ({ base: e = "", routes: t = [], ...o } = {}) => ({ __proto__: ne
 // Create a new router
 const router = Router();
 
-// --- Core Guardian Logic Utilities ---
 const safeB64 = (str) => {
     try {
         const bytes = new TextEncoder().encode(str);
         let binary = "";
-        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-        return btoa(binary).replace(/[\s\r\n]/g, "");
-    } catch (e) { return ""; }
+        for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+    } catch (e) {
+        return "";
+    }
 };
 
 const tryDecode = (str) => {
-    try { return atob(str.replace(/[\s\r\n]/g, "")); } catch (e) { return null; }
+    try {
+        const binary = atob(str.replace(/[\s\r\n]/g, ""));
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return new TextDecoder().decode(bytes);
+    } catch (e) {
+        return null;
+    }
 };
 
 /**
@@ -248,7 +260,30 @@ async function proxyToBackend(request, env) {
         let realUserinfo = null;
 
 
-        // 5. Backend Fallback Proxy Logic
+        // 4. Direct Fetch for Scan (list=true) - Restored and Improved
+        const isScan = url.searchParams.get("list") === "true";
+        if (isScan) {
+            console.log(`[SCAN] Raw fetch for: ${actualSub}`);
+            try {
+                const directRes = await fetch(actualSub, {
+                    headers: { "User-Agent": "Clash/1.0" },
+                    method: "GET"
+                });
+                if (directRes.ok) {
+                    const data = await directRes.text();
+                    console.log(`[SCAN] Direct fetch successful. Size: ${data.length}`);
+
+                    const h = new Headers();
+                    h.set("Access-Control-Allow-Origin", "*");
+                    h.set("Content-Type", "text/plain; charset=utf-8");
+                    h.set("X-Config-Type", "Raw");
+
+                    return new Response(data, { status: 200, headers: h });
+                }
+            } catch (e) {
+                console.warn(`[SCAN] Direct fetch failed: ${e.message}`);
+            }
+        }
         const backends = [
             "https://api.v1.mk",
             "https://sub.xeton.dev",
